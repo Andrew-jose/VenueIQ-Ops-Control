@@ -1,0 +1,15 @@
+[project]
+name = "ingestion"
+version = "0.1.0"
+description = "FastAPI — receives POS webhooks & Wi-Fi telemetry"
+dependencies = [
+    "fastapi",
+    "pydantic",
+    "google-cloud-pubsub",
+    "firebase-admin",
+    "uvicorn",
+    "slowapi",
+    "pytest",
+    "pytest-asyncio",
+    "httpx"
+]

@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  ingestion:
+    build:
+      context: ./services/ingestion
+    ports:
+      - "8001:8000"
+    env_file: .env
+
+  prediction:
+    build:
+      context: ./services/prediction
+    ports:
+      - "8002:8000"
+    env_file: .env
+
+  notification:
+    build:
+      context: ./services/notification
+    ports:
+      - "8003:8002"
+    env_file: .env

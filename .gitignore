@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.env.local
+.env
+
+# Node
+node_modules/
+dist/
+.next/
+
+# ML model weights (too large for GitHub)
+*.pt
+*.pth
+train_log.txt
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup

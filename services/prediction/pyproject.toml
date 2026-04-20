@@ -1,0 +1,10 @@
+[project]
+name = "prediction"
+version = "0.1.0"
+description = "FastAPI — serves ST-GAT crowd density forecasts"
+dependencies = [
+    "fastapi",
+    "pydantic",
+    "google-cloud-pubsub",
+    "firebase-admin"
+]
