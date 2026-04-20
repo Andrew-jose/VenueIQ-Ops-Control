@@ -12,14 +12,24 @@ export const NotificationBanner = () => {
           const permission = await Notification.requestPermission();
           
           if (permission === 'granted') {
-            const vapidKey = import.meta.env.VITE_FCM_VAPID_KEY || 'mock-vapid-key';
+            const vapidKey = import.meta.env.VITE_FCM_VAPID_KEY;
+            if (!vapidKey || vapidKey === 'YOUR_VAPID_KEY_HERE' || vapidKey === 'REPLACE_ME') {
+              console.error(
+                '[NotificationBanner] VITE_FCM_VAPID_KEY is not set.\n' +
+                'FCM push token registration is disabled.\n' +
+                'Set the variable in .env.local (dev) or as a Cloud Run env var (prod).'
+              );
+              return; // bail out — do not attempt token fetch with an invalid key
+            }
             try {
               const currentToken = await getFCMToken(messaging, { vapidKey });
               if (currentToken) {
-                console.log('FCM Token retrieved successfully');
+                console.log('[NotificationBanner] FCM token retrieved successfully.');
+              } else {
+                console.warn('[NotificationBanner] No FCM token available — check VAPID key and service-worker registration.');
               }
             } catch (tokenErr) {
-              // Silently ignore
+              console.error('[NotificationBanner] FCM token fetch failed:', tokenErr.message);
             }
 
             onFCMMessage(messaging, (payload) => {

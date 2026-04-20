@@ -37,14 +37,22 @@ function App() {
     return zones.find((z) => z.node_id === selectedZoneId) || null;
   }, [selectedZoneId, zones]);
 
+  const getDensityColor = (density) => {
+    if (density > 0.8) return '#EF4444';
+    if (density < 0.5) return '#10B981';
+    return '#F59E0B';
+  };
+
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-gray-100 flex flex-col font-sans">
+    <div className="relative w-full h-screen overflow-hidden bg-[#080C0E] flex flex-col font-sans">
       <NotificationBanner />
       
       {/* Top Bar */}
-      <header className="absolute top-0 w-full z-20 bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-200">
+      <header className="absolute top-0 w-full z-20 bg-[#080C0E]/95 backdrop-blur-md border-b border-[#1A2E30]">
         <div className="flex items-center justify-between px-4 py-3 max-w-7xl mx-auto">
-          <h1 className="text-xl font-bold tracking-tight text-blue-900">VenueIQ</h1>
+          <h1 className="text-xl font-black tracking-tight text-[#F0F4F5]">
+            Venue<span className="text-[#F59E0B]">IQ</span>
+          </h1>
           <ConfidenceBadge confidence={overallConfidence} />
         </div>
       </header>
@@ -59,51 +67,61 @@ function App() {
 
       {/* Bottom Sheet */}
       <div 
-        className={`absolute bottom-0 left-0 w-full bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.12)] rounded-t-3xl transition-transform duration-300 ease-in-out z-30 ${selectedZone ? 'translate-y-0' : 'translate-y-full'}`}
+        className={`absolute bottom-0 left-0 w-full bg-[#0F1A1C] shadow-[0_-8px_30px_rgba(0,0,0,0.4)] rounded-t-3xl transition-transform duration-300 ease-in-out z-30 ${selectedZone ? 'translate-y-0' : 'translate-y-full'}`}
         role="dialog"
         aria-label="Zone details"
         aria-modal="false"
       >
         {selectedZone && (
           <div className="p-6 max-w-lg mx-auto w-full">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-gray-900 zone-name">{selectedZone.node_name || selectedZone.node_id}</h2>
+            <div className="w-12 h-1 bg-[#1A2E30] rounded-full mx-auto mb-6" />
+            
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h2 className="text-2xl font-extrabold text-[#F0F4F5] tracking-tighter leading-none mb-1">
+                  {selectedZone.node_name || selectedZone.node_id}
+                </h2>
+                <span className="text-[11px] font-bold text-[#6B8A8D] uppercase tracking-widest">Zone Statistics</span>
+              </div>
               <button 
                 onClick={() => setSelectedZoneId(null)}
-                className="p-2 rounded-full hover:bg-gray-100 min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="p-2 rounded-full hover:bg-[#152124] min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors focus:outline-none"
                 aria-label="Close details"
               >
-                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                <X className="w-5 h-5 text-[#6B8A8D]" />
               </button>
             </div>
 
-            <div className="mb-6">
+            <div className="mb-8">
               <div className="flex justify-between items-end mb-2">
-                <span className="text-sm font-semibold text-gray-700">Current Density</span>
-                <span className="text-sm font-bold text-gray-900 number-display">{Math.round(selectedZone.density * 100)}%</span>
+                <span className="text-[11px] font-bold text-[#6B8A8D] uppercase tracking-wider">Current Density</span>
+                <span className={`text-3xl font-black number-display`} style={{ color: getDensityColor(selectedZone.density) }}>
+                  {Math.round(selectedZone.density * 100)}%
+                </span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+              <div className="w-full bg-[#1A2E30] rounded-full h-3 overflow-hidden">
                 <div 
-                  className={`h-3 rounded-full ${selectedZone.density > 0.8 ? 'bg-red-500' : selectedZone.density < 0.5 ? 'bg-green-500' : 'bg-amber-500'}`}
-                  style={{ width: `${selectedZone.density * 100}%` }}
-                ></div>
+                  className={`h-3 rounded-full transition-all duration-1000`}
+                  style={{ 
+                    width: `${selectedZone.density * 100}%`,
+                    backgroundColor: getDensityColor(selectedZone.density)
+                  }}
+                />
               </div>
             </div>
 
             {selectedZone.predicted_density && selectedZone.predicted_density.length >= 3 && (
-              <div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-3">AI Forecast</h3>
+              <div className="mb-8">
+                <h3 className="text-[11px] font-bold text-[#F59E0B] uppercase tracking-widest mb-4">AI Forecast</h3>
                 <div className="flex justify-between gap-3">
                   {selectedZone.predicted_density.map((pred, idx) => {
                     const pct = Math.round(pred * 100);
-                    let colorClass = 'bg-amber-100 text-amber-800 border-amber-200';
-                    if (pred > 0.8) colorClass = 'bg-red-100 text-red-800 border-red-200';
-                    if (pred < 0.5) colorClass = 'bg-green-100 text-green-800 border-green-200';
+                    const color = getDensityColor(pred);
                     
                     return (
-                      <div key={idx} className={`flex-1 flex flex-col items-center justify-center p-3 rounded-xl border ${colorClass}`}>
-                        <span className="text-xs uppercase tracking-wider font-semibold opacity-80 mb-1">+{idx + 1}0 min</span>
-                        <span className="text-lg font-bold number-display">{pct}%</span>
+                      <div key={idx} className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl border border-[#1A2E30] bg-[#152124]`}>
+                        <span className="text-[10px] uppercase tracking-wider font-bold text-[#6B8A8D] mb-1">+{idx + 1}0 min</span>
+                        <span className="text-lg font-black number-display" style={{ color }}>{pct}%</span>
                       </div>
                     );
                   })}
@@ -111,10 +129,10 @@ function App() {
               </div>
             )}
             
-            <div className="mt-6">
+            <div className="mt-8">
               <button 
                 onClick={() => handleNavigate(ZONE_COORDINATES[selectedZone.node_id])}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl min-h-[44px] transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                className="w-full bg-gradient-to-r from-[#F59E0B] to-[#FB923C] text-[#080C0E] font-black py-4 px-4 rounded-2xl transition-all shadow-lg shadow-[#F59E0B]/20 active:scale-[0.98] hover:opacity-90"
               >
                 Navigate Here
               </button>
@@ -123,6 +141,12 @@ function App() {
         )}
       </div>
     </div>
+  );
+}
+
+function X(props) {
+  return (
+    <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"></path></svg>
   );
 }
 

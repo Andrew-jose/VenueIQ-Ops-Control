@@ -2,9 +2,14 @@
 name = "prediction"
 version = "0.1.0"
 description = "FastAPI — serves ST-GAT crowd density forecasts"
+requires-python = ">=3.12"
 dependencies = [
-    "fastapi",
-    "pydantic",
-    "google-cloud-pubsub",
-    "firebase-admin"
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.27.0",
+    "pydantic>=2.0.0",
+    "google-cloud-pubsub>=2.21.0",
+    "firebase-admin>=6.4.0",
+    "google-cloud-bigquery>=3.19.0",
+    "torch>=2.2.0",
+    "numpy>=1.26.0",
 ]

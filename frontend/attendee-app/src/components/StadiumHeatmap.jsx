@@ -12,6 +12,10 @@ const mapOptions = {
   disableDefaultUI: true,
   styles: [
     { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+    { featureType: 'all', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+    { featureType: 'water', stylers: [{ color: '#080C0E' }] },
+    { featureType: 'landscape', stylers: [{ color: '#0A1214' }] },
+    { featureType: 'road', stylers: [{ color: '#1A2E30' }] },
   ],
 };
 
@@ -19,15 +23,15 @@ const getMarkerIcon = (density) => {
   const isHighDensity = density > 0.8;
   const isLowDensity = density < 0.5;
 
-  let color = '#f59e0b'; // amber/medium
-  if (isHighDensity) color = '#ef4444'; // red/high
-  if (isLowDensity) color = '#22c55e'; // green/low
+  let color = '#F59E0B'; // amber
+  if (isHighDensity) color = '#EF4444'; // red
+  if (isLowDensity) color = '#10B981'; // green
 
   return {
     path: window.google ? window.google.maps.SymbolPath.CIRCLE : 0,
     fillColor: color,
     fillOpacity: 1,
-    strokeColor: '#ffffff',
+    strokeColor: '#080C0E',
     strokeWeight: 2,
     scale: isHighDensity ? 14 : 10,
   };
@@ -48,7 +52,6 @@ export const StadiumHeatmap = ({ zones, onZoneClick }) => {
   }, [zones]);
 
   const renderDemoMap = () => {
-    // Map of zone labels to coordinates in the 1000x1000 SVG space
     const stadiumLayout = {
       'gate_a1': { x: 500, y: 150, abbr: 'A1' },
       'gate_a2': { x: 500, y: 850, abbr: 'A2' },
@@ -65,14 +68,14 @@ export const StadiumHeatmap = ({ zones, onZoneClick }) => {
     };
 
     return (
-      <div className="w-full h-full bg-[#0F172A] flex items-center justify-center relative overflow-hidden">
+      <div className="w-full h-full bg-[#080C0E] flex items-center justify-center relative overflow-hidden">
         <svg viewBox="0 0 1000 1000" className="w-full h-full max-w-4xl max-h-[80vh]">
           {/* External Stadium Perimeter */}
-          <ellipse cx="500" cy="500" rx="450" ry="400" fill="none" stroke="#1E293B" strokeWidth="40" />
+          <ellipse cx="500" cy="500" rx="450" ry="400" fill="none" stroke="#1A2E30" strokeWidth="40" />
           
           {/* Main Field */}
-          <ellipse cx="500" cy="500" rx="300" ry="250" fill="#1E293B" stroke="#334155" strokeWidth="4" />
-          <ellipse cx="500" cy="500" rx="200" ry="150" fill="none" stroke="#334155" strokeWidth="2" strokeDasharray="10 10" />
+          <ellipse cx="500" cy="500" rx="300" ry="250" fill="#0F1A1C" stroke="#1A2E30" strokeWidth="4" />
+          <ellipse cx="500" cy="500" rx="200" ry="150" fill="none" stroke="#152124" strokeWidth="2" strokeDasharray="10 10" />
           
           {zones.map((zone) => {
              const layout = stadiumLayout[zone.node_id.toLowerCase()];
@@ -82,14 +85,15 @@ export const StadiumHeatmap = ({ zones, onZoneClick }) => {
              const isHigh = density > 0.8;
              const isLow = density < 0.5;
              const color = isHigh ? '#EF4444' : isLow ? '#10B981' : '#F59E0B';
+             const textColor = isLow || isHigh ? '#FFFFFF' : '#080C0E';
              
              return (
                <g key={zone.node_id} transform={`translate(${layout.x}, ${layout.y})`} className="cursor-pointer group" onClick={() => onZoneClick(zone.node_id)}>
                  {/* Pulse for high density */}
                  {isHigh && (
-                   <circle cx="0" cy="0" r="45" fill="none" stroke={color} strokeWidth="4">
-                     <animate attributeName="r" from="45" to="90" dur="1.5s" repeatCount="indefinite" />
-                     <animate attributeName="opacity" from="0.6" to="0" dur="1.5s" repeatCount="indefinite" />
+                   <circle cx="0" cy="0" r="45" fill="none" stroke="rgba(239,68,68,0.3)" strokeWidth="6">
+                     <animate attributeName="r" from="45" to="110" dur="2s" repeatCount="indefinite" />
+                     <animate attributeName="opacity" from="0.8" to="0" dur="2s" repeatCount="indefinite" />
                    </circle>
                  )}
                  
@@ -98,16 +102,15 @@ export const StadiumHeatmap = ({ zones, onZoneClick }) => {
                    cx="0" cy="0" 
                    r={isHigh ? 50 : 45} 
                    fill={color} 
-                   className="transition-all duration-300 group-hover:r-55"
-                   stroke="#fff" 
-                   strokeWidth="3" 
+                   className="transition-all duration-300 group-hover:scale-110"
+                   style={{ transformOrigin: 'center' }}
                  />
                  
                  {/* Text Labels */}
-                 <text x="0" y="-5" textAnchor="middle" fill="#fff" fontSize="18" fontWeight="700" fontFamily="'Plus Jakarta Sans', sans-serif" className="pointer-events-none">
+                 <text x="0" y="-5" textAnchor="middle" fill={textColor} fontSize="18" fontWeight="700" fontFamily="'Plus Jakarta Sans', sans-serif" className="pointer-events-none">
                    {layout.abbr}
                  </text>
-                 <text x="0" y="20" textAnchor="middle" fill="#fff" fontSize="14" fontWeight="800" fontFamily="'Plus Jakarta Sans', sans-serif" className="pointer-events-none number-display">
+                 <text x="0" y="20" textAnchor="middle" fill={textColor} fontSize="14" fontWeight="800" fontFamily="'Plus Jakarta Sans', sans-serif" className="pointer-events-none number-display">
                    {Math.round(density * 100)}%
                  </text>
                </g>
@@ -116,25 +119,25 @@ export const StadiumHeatmap = ({ zones, onZoneClick }) => {
         </svg>
 
         {/* Legend */}
-        <div className="absolute bottom-6 left-6 flex flex-col gap-2 bg-slate-900/80 backdrop-blur-md p-4 rounded-xl border border-white/10">
+        <div className="absolute bottom-6 left-6 flex flex-col gap-3 bg-[#0F1A1C]/90 backdrop-blur-md p-4 rounded-2xl border border-[#1A2E30] shadow-2xl">
           <div className="flex items-center gap-3">
             <div className="w-3 h-3 rounded-full bg-[#10B981]" />
-            <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Available</span>
+            <span className="text-[10px] font-bold text-[#6B8A8D] uppercase tracking-widest">Available</span>
           </div>
           <div className="flex items-center gap-3">
             <div className="w-3 h-3 rounded-full bg-[#F59E0B]" />
-            <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Moderate</span>
+            <span className="text-[10px] font-bold text-[#6B8A8D] uppercase tracking-widest">Moderate</span>
           </div>
           <div className="flex items-center gap-3">
             <div className="w-3 h-3 rounded-full bg-[#EF4444]" />
-            <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Crowded</span>
+            <span className="text-[10px] font-bold text-[#6B8A8D] uppercase tracking-widest">Crowded</span>
           </div>
         </div>
 
         {/* Demo Text */}
         <div className="absolute bottom-6 right-6">
-          <span className="text-[9px] font-medium text-slate-500 uppercase tracking-[0.2em]">
-            Demo Mode — Connect Maps API for live map
+          <span className="text-[9px] font-black text-[#2A4A4D] uppercase tracking-[0.2em]">
+            Thermal Imaging Simulation Mode
           </span>
         </div>
       </div>
@@ -172,15 +175,12 @@ export const StadiumHeatmap = ({ zones, onZoneClick }) => {
               position={coord}
               icon={getMarkerIcon(zone.density)}
               onClick={() => onZoneClick(zone.node_id)}
-              aria-label={`Zone ${zone.node_name || zone.node_id}: ${Math.round(zone.density * 100)}% density`}
-              aria-hidden="false"
             />
           );
         })}
       </GoogleMap>
     );
   } catch (err) {
-    console.error("Map rendering failed, falling back to SVG", err);
     return renderDemoMap();
   }
 };

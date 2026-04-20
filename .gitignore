@@ -3,8 +3,15 @@ __pycache__/
 *.py[cod]
 .venv/
 *.egg-info/
-.env.local
+
+# Environment / secrets — NEVER commit these
 .env
+.env.local
+.env.*.local
+*.env.local
+# Explicitly block both frontend env files
+frontend/attendee-app/.env.local
+frontend/ops-dashboard/.env.local
 
 # Node
 node_modules/
@@ -24,3 +31,5 @@ Thumbs.db
 .terraform/
 *.tfstate
 *.tfstate.backup
+terraform.tfvars
+.terraform.lock.hcl

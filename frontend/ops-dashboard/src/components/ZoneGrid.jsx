@@ -1,19 +1,18 @@
 import { useState } from 'react';
-import { LineChart, Line, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, ResponsiveContainer, Tooltip } from 'recharts';
 import { useZoneDensity } from '../hooks/useZoneDensity';
-import { Users, TrendingUp, AlertCircle, CheckCircle, Send } from 'lucide-react';
+import { Users, TrendingUp, Send, CheckCircle, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-function ConfidenceBadge({ confidence }) {
-  const isHigh = confidence === 'High';
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-      isHigh ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-    }`}>
-      {isHigh ? <CheckCircle size={10} /> : <AlertCircle size={10} />}
-      {confidence}
-    </span>
-  );
+function densityClass(val) {
+  if (val > 0.8) return 'high';
+  if (val > 0.5) return 'mid';
+  return 'low';
+}
+function densityColor(val) {
+  if (val > 0.8) return 'var(--thermal-high)';
+  if (val > 0.5) return 'var(--thermal-mid)';
+  return 'var(--thermal-low)';
 }
 
 export default function ZoneGrid() {
@@ -23,106 +22,107 @@ export default function ZoneGrid() {
   const handleSendAlert = async (zoneId, zoneName) => {
     setAlerting(prev => ({ ...prev, [zoneId]: true }));
     try {
-      const response = await fetch('http://localhost:8002/notify/alert', {
+      const res = await fetch('http://localhost:8002/notify/alert', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ zone_id: zoneId, message: `Staff needed at ${zoneName}` })
+        body: JSON.stringify({ zone_id: zoneId, message: `Staff needed at ${zoneName}` }),
       });
-      
-      if (response.ok) {
-        toast.success(`Alert sent to ${zoneName}`);
-      } else {
-        throw new Error();
-      }
-    } catch (e) {
+      if (res.ok) toast.success(`Alert sent to ${zoneName}`);
+      else throw new Error();
+    } catch {
       toast.error(`Failed to notify ${zoneName}`);
     } finally {
       setAlerting(prev => ({ ...prev, [zoneId]: false }));
     }
   };
 
-  const getStatusColor = (val) => {
-    if (val < 0.5) return 'from-green-500/40 to-green-500/10 text-green-400 border-green-500/30';
-    if (val <= 0.8) return 'from-amber-500/40 to-amber-500/10 text-amber-400 border-amber-500/30';
-    return 'from-red-500/40 to-red-500/10 text-red-400 border-red-500/30';
-  };
-
-  const getBarColor = (val) => {
-    if (val < 0.5) return 'bg-green-500';
-    if (val <= 0.8) return 'bg-amber-500';
-    return 'bg-red-500';
-  };
-
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {densities.map((zone) => (
-        <div key={zone.id} className="group relative glass rounded-2xl p-5 hover:border-white/20 transition-all duration-300 overflow-hidden">
-          {/* Subtle gradient background on hover */}
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          
-          <div className="relative z-10 space-y-5">
-            <div className="flex justify-between items-start">
-              <div className="space-y-1">
-                <h4 className="font-bold text-white tracking-tight">{zone.name}</h4>
-                <div className="flex items-center gap-2">
-                  <Users size={12} className="text-slate-500" />
-                  <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Zone ID: {zone.id}</span>
+    <div className="zone-grid">
+      {densities.map(zone => {
+        const cls   = densityClass(zone.density);
+        const color = densityColor(zone.density);
+        const pct   = Math.round(zone.density * 100);
+        return (
+          <div key={zone.id} className={`zone-card ${cls}`} id={`zone-${zone.id}`}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
+                  {zone.name}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 3 }}>
+                  <Users size={10} color="var(--text-secondary)" />
+                  <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                    {zone.id}
+                  </span>
                 </div>
               </div>
-              <ConfidenceBadge confidence={zone.confidence} />
+              <span className="tag" style={{
+                fontSize: 9, padding: '2px 7px',
+                background: zone.confidence === 'High' ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)',
+                color: zone.confidence === 'High' ? '#34D399' : '#F59E0B',
+                borderColor: zone.confidence === 'High' ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)',
+              }}>
+                {zone.confidence === 'High' ? <CheckCircle size={8} /> : <AlertCircle size={8} />}
+                {' '}{zone.confidence}
+              </span>
             </div>
-            
-            <div className="space-y-2">
-              <div className="flex justify-between items-end">
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-tighter">Current Load</span>
-                <span className={`text-2xl font-black tracking-tighter number-display ${(zone.density > 0.8) ? 'text-red-400' : (zone.density > 0.5) ? 'text-amber-400' : 'text-green-400'}`}>
-                  {(zone.density * 100).toFixed(0)}%
-                </span>
+
+            {/* Density value + bar */}
+            <div style={{ marginBottom: 2 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 6 }}>
+                <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Load</span>
+                <span className="zone-density-label number-display">{pct}%</span>
               </div>
-              <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden border border-white/5">
-                <div 
-                  className={`h-full ${getBarColor(zone.density)} shadow-[0_0_10px_rgba(0,0,0,0.5)] transition-all duration-1000 ease-out`}
-                  style={{ width: `${zone.density * 100}%` }}
-                />
+              <div className="zone-bar-track">
+                <div className="zone-bar-fill" style={{ width: `${pct}%` }} />
               </div>
             </div>
 
-            <div className="pt-4 flex items-center justify-between gap-4 border-t border-white/5">
-              <div className="flex-1 space-y-2">
-                <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                  <TrendingUp size={10} />
-                  30m Forecast
+            {/* Sparkline + alert button */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingTop: 8, borderTop: '1px solid var(--border-subtle)' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                  <TrendingUp size={9} color="var(--text-muted)" />
+                  <span style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                    30m forecast
+                  </span>
                 </div>
-                <div className="h-10 w-full">
+                <div style={{ height: 32 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={zone.forecastData}>
-                      <Line 
-                        type="monotone" 
-                        dataKey="density" 
-                        stroke={zone.density > 0.8 ? '#f87171' : '#3b82f6'} 
-                        strokeWidth={2} 
-                        dot={false}
-                        isAnimationActive={true}
+                      <Line type="monotone" dataKey="density" stroke={color} strokeWidth={1.5} dot={false} />
+                      <Tooltip
+                        contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 6, fontSize: 10 }}
+                        formatter={(v) => [`${Math.round(v * 100)}%`, 'Density']}
                       />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
               </div>
-              
+
               <button
+                id={`alert-btn-${zone.id}`}
                 aria-label={`Alert staff for ${zone.name}`}
                 disabled={alerting[zone.id]}
                 onClick={() => handleSendAlert(zone.id, zone.name)}
-                className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 border ${
-                  alerting[zone.id] ? 'bg-slate-800 border-white/10' : 'bg-blue-600/10 border-blue-500/20 text-blue-400 hover:bg-blue-600 hover:text-white hover:shadow-lg hover:shadow-blue-600/20'
-                }`}
+                style={{
+                  width: 36, height: 36, borderRadius: 10, border: 'none',
+                  background: alerting[zone.id] ? 'var(--bg-elevated)' : 'linear-gradient(135deg,#F59E0B,#FB923C)',
+                  color: alerting[zone.id] ? 'var(--text-muted)' : '#060A0B',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: alerting[zone.id] ? 'not-allowed' : 'pointer',
+                  flexShrink: 0,
+                  boxShadow: alerting[zone.id] ? 'none' : '0 4px 12px rgba(245,158,11,0.3)',
+                  transition: 'all 0.2s ease',
+                }}
               >
-                <Send size={18} className={alerting[zone.id] ? 'animate-pulse' : ''} />
+                <Send size={14} style={{ animation: alerting[zone.id] ? 'pulseGlow 1s infinite' : 'none' }} />
               </button>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
